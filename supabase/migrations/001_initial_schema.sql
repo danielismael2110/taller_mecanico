@@ -1,13 +1,9 @@
 -- =====================================================================
---  PROYECTO: Sistema Web para la Gestión y el Control de un Taller
---  TALLER  : GaraGato   ·   MOTOR: Supabase (PostgreSQL)
+--  PROYECTO : Sistema Web para la Gestión y el Control de un Taller
+--  TALLER   : GaraGato  ·  MOTOR: Supabase (PostgreSQL)
 --
---  Esquema completo EN ESPAÑOL. Cubre los 91 RF y los RNF de BD.
---  Notificaciones SOLO in-app. Ejecutar en Supabase > SQL Editor.
---
---  NOTA: este archivo es el esquema canónico del proyecto (RNF-030).
---  Para el detalle completo y comentado por sección (0 a 20), conserva
---  la versión maestra entregada por el equipo. Aquí se incluye íntegro.
+--  Esquema principal en español. Notificaciones solo in-app.
+--  Ejecutar en Supabase > SQL Editor.
 -- =====================================================================
 
 -- 0. EXTENSIONES
@@ -22,7 +18,7 @@ create type estado_orden as enum (
   'pendiente_asignacion','recepcion','diagnostico','presupuesto_enviado','presupuesto_aprobado','presupuesto_rechazado',
   'en_reparacion','esperando_repuestos','control_calidad','listo_entrega','entregado','pagado','cancelado');
 create type prioridad_orden as enum ('baja','media','alta','urgente');
--- Estado de la asignación de cada mecánico a una OT (flujo aceptar/rechazar).
+-- Estado de la asignación de cada mecánico a una orden de trabajo.
 create type estado_asignacion as enum ('pendiente','aceptada','rechazada');
 create type estado_presupuesto as enum ('borrador','enviado','aprobado','rechazado','vencido');
 create type estado_cita as enum ('solicitada','confirmada','reprogramada','cancelada','completada','no_asistio');
@@ -381,7 +377,7 @@ create or replace function incrementar_version_orden() returns trigger language 
 begin
   if tg_op = 'UPDATE' then
     if new.version is not null and old.version is not null and new.version <> old.version then
-      raise exception 'Conflicto de edición (RNF-024): la OT fue modificada por otro usuario.'; end if;
+      raise exception 'Conflicto de edición: la orden fue modificada por otro usuario.'; end if;
     new.version := old.version + 1;
   end if; return new;
 end $$;
@@ -390,7 +386,7 @@ create trigger trg_ot_version before update on ordenes_trabajo for each row exec
 create or replace function ajustar_stock(p_repuesto uuid, p_nuevo_stock numeric, p_motivo text) returns void language plpgsql security definer set search_path = public as $$
 declare v_stock numeric(12,2);
 begin
-  if p_motivo is null or length(trim(p_motivo)) = 0 then raise exception 'El motivo es obligatorio para ajustes manuales de stock (RF-046).'; end if;
+  if p_motivo is null or length(trim(p_motivo)) = 0 then raise exception 'El motivo es obligatorio para ajustes manuales de stock.'; end if;
   select stock into v_stock from repuestos where id = p_repuesto for update;
   update repuestos set stock = p_nuevo_stock where id = p_repuesto;
   insert into movimientos_inventario (repuesto_id, tipo, cantidad, stock_anterior, stock_nuevo, motivo, creado_por)
@@ -413,10 +409,10 @@ begin
   if new.mecanico_id is not null and new.estado not in ('cancelada','no_asistio') then
     if exists (select 1 from citas a where a.mecanico_id = new.mecanico_id and a.id <> new.id and a.estado not in ('cancelada','no_asistio')
       and tstzrange(a.inicio, a.fin) && tstzrange(new.inicio, new.fin)) then
-      raise exception 'El mecánico ya tiene una cita en ese horario (RF-053).'; end if;
+      raise exception 'El mecánico ya tiene una cita en ese horario.'; end if;
     if exists (select 1 from bloqueos_agenda b where (b.mecanico_id = new.mecanico_id or b.mecanico_id is null)
       and tstzrange(b.inicio, b.fin) && tstzrange(new.inicio, new.fin)) then
-      raise exception 'El horario está bloqueado (feriado/bloqueo) (RF-056).'; end if;
+      raise exception 'El horario está bloqueado (feriado o bloqueo de agenda).'; end if;
   end if; return new;
 end $$;
 create trigger trg_cita_solape before insert or update on citas for each row execute function validar_solape_cita();
@@ -504,8 +500,7 @@ create or replace view v_carga_mecanicos as
   from perfiles p left join orden_mecanicos om on om.mecanico_id = p.id left join ordenes_trabajo o on o.id = om.orden_id
   where p.rol = 'mecanico' group by p.id, p.nombre;
 
--- 15.1 Las vistas respetan la RLS de las tablas base (no "saltan" permisos).
---      (Postgres 15+). El admin/interno ve todo; el resto solo lo que su RLS permita.
+-- Las vistas respetan la RLS de las tablas base (Postgres 15+).
 alter view v_stock_critico       set (security_invoker = on);
 alter view v_vehiculos_con_deuda set (security_invoker = on);
 alter view v_ingresos            set (security_invoker = on);
@@ -581,7 +576,7 @@ create policy orden_rep_write on orden_repuestos for all using (es_interno()) wi
 create policy orden_rep_cliente on orden_repuestos for select using (es_dueno_orden(orden_id));
 create policy orden_mec_interno on orden_mecanicos for select using (es_interno());
 create policy orden_mec_write on orden_mecanicos for all using (es_admin_o_recepcion()) with check (es_admin_o_recepcion());
--- El mecánico acepta/rechaza su propia asignación (flujo de asignación).
+-- El mecánico puede aceptar o rechazar su propia asignación.
 create policy orden_mec_mecanico_insert on orden_mecanicos for insert with check (mecanico_id = auth.uid() and rol_actual() = 'mecanico');
 create policy orden_mec_mecanico_update on orden_mecanicos for update using (mecanico_id = auth.uid()) with check (mecanico_id = auth.uid());
 create policy hist_interno on historial_estados_orden for select using (es_interno());
@@ -602,7 +597,7 @@ create policy citas_cliente_lectura on citas for select using (exists (select 1 
 create policy citas_cliente_insert on citas for insert with check (exists (select 1 from clientes c where c.id = citas.cliente_id and c.usuario_id = auth.uid()));
 create policy citas_cliente_update on citas for update using (exists (select 1 from clientes c where c.id = citas.cliente_id and c.usuario_id = auth.uid()));
 create policy bloqueos_lectura on bloqueos_agenda for select using (true);
--- Solo el recepcionista gestiona los bloqueos de agenda (RF-056).
+-- Solo el recepcionista puede gestionar los bloqueos de agenda.
 create policy bloqueos_recepcion on bloqueos_agenda for all using (rol_actual() = 'recepcionista') with check (rol_actual() = 'recepcionista');
 create policy pagos_interno_lectura on pagos for select using (es_interno());
 create policy pagos_arc_write on pagos for all using (es_admin_o_recepcion()) with check (es_admin_o_recepcion());
@@ -629,7 +624,7 @@ create policy storage_servicios_update on storage.objects for update to authenti
 create policy storage_priv_lectura on storage.objects for select to authenticated using (bucket_id in ('comprobantes','adjuntos-ot','documentos'));
 create policy storage_priv_write on storage.objects for insert to authenticated with check (bucket_id in ('comprobantes','adjuntos-ot','documentos'));
 
--- 19 / 20. NOTIFICACIONES IN-APP HACIA CLIENTE / TALLER / MECÁNICO
+-- 19 / 20. NOTIFICACIONES IN-APP
 create or replace function cliente_usuario_de_orden(p_orden uuid) returns uuid language sql stable security definer set search_path = public as $$
   select c.usuario_id from ordenes_trabajo o join clientes c on c.id = o.cliente_id where o.id = p_orden; $$;
 
@@ -708,7 +703,7 @@ create trigger trg_notif_cita_cliente after update of estado on citas for each r
 create or replace function notificar_asignacion_mecanico() returns trigger language plpgsql security definer set search_path = public as $$
 declare v_numero text;
 begin
-  -- Solo se confirma al mecánico cuando ACEPTA la orden.
+  -- Solo se notifica al mecánico cuando acepta la orden.
   if new.estado <> 'aceptada' then return new; end if;
   select numero into v_numero from ordenes_trabajo where id = new.orden_id;
   insert into notificaciones (usuario_id, tipo, titulo, mensaje, url)
@@ -717,7 +712,7 @@ begin
 end $$;
 create trigger trg_notif_asignacion_mecanico after insert on orden_mecanicos for each row execute function notificar_asignacion_mecanico();
 
--- Flujo de asignación: avisar a todos los mecánicos de una OT pendiente de asignación.
+-- Notifica a todos los mecánicos activos cuando una orden queda pendiente de asignación.
 create or replace function notificar_ot_pendiente() returns trigger language plpgsql security definer set search_path = public as $$
 declare r record;
 begin
@@ -734,7 +729,7 @@ end $$;
 create trigger trg_notif_ot_pendiente after insert on ordenes_trabajo
   for each row execute function notificar_ot_pendiente();
 
--- Flujo de asignación: cuando los mecánicos aceptados alcanzan los requeridos, la OT avanza a 'diagnostico'.
+-- Avanza la orden a diagnóstico cuando los mecánicos aceptados alcanzan el número requerido.
 create or replace function avanzar_ot_si_completa() returns trigger language plpgsql security definer set search_path = public as $$
 declare v_aceptados int; v_requeridos smallint; v_estado estado_orden; v_orden uuid;
 begin
