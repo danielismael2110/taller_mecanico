@@ -2,7 +2,7 @@
 --  PROYECTO : Sistema Web para la Gestión y el Control de un Taller
 --  TALLER   : GaraGato  ·  MOTOR: Supabase (PostgreSQL)
 --
---  Esquema principal  Notificaciones solo in-app.
+--  Esquema principal en español. Notificaciones solo in-app.
 --  Ejecutar en Supabase > SQL Editor.
 -- =====================================================================
 
