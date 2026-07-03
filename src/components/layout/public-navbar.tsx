@@ -1,9 +1,10 @@
 "use client";
 
-import { LayoutAlt01, LogOut01, Menu02, Tool01, X as CloseIcon } from "@untitledui/icons";
+import { LayoutAlt01, LogOut01, Menu02, X as CloseIcon } from "@untitledui/icons";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/base/buttons/button";
+import { LogoMark } from "@/components/foundations/logo/logo-mark";
 import { useAuth } from "@/hooks/use-auth";
 import { DASHBOARD_POR_ROL } from "@/lib/constants";
 import { ThemeToggle } from "./theme-toggle";
@@ -46,9 +47,7 @@ export function PublicNavbar() {
         <header className="sticky top-0 z-40 border-b border-secondary bg-primary/80 backdrop-blur-md">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
                 <Link href="/" className="flex items-center gap-2">
-                    <span className="flex size-9 items-center justify-center rounded-lg bg-brand-solid text-white">
-                        <Tool01 className="size-5" />
-                    </span>
+                    <LogoMark />
                     <span className="text-lg font-bold text-primary">GaraGato</span>
                 </Link>
 

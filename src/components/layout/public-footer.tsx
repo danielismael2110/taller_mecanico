@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock, Mail01, MarkerPin01, Phone, Tool01 } from "@untitledui/icons";
+import { Clock, Mail01, MarkerPin01, Phone } from "@untitledui/icons";
 import Link from "next/link";
+import { LogoMark } from "@/components/foundations/logo/logo-mark";
 import { useTallerContext } from "@/contexts/taller-context";
 
 /** Pie de página del portal con la información del taller. */
@@ -13,9 +14,7 @@ export function PublicFooter() {
             <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="flex size-9 items-center justify-center rounded-lg bg-brand-solid text-white">
-                            <Tool01 className="size-5" />
-                        </span>
+                        <LogoMark />
                         <span className="text-lg font-bold text-primary">GaraGato</span>
                     </div>
                     <p className="mt-3 text-sm text-tertiary">{config?.nombre ?? "Taller Mecánico GaraGato"}</p>

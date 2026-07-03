@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Edit01, Image01, Plus, Trash01, UploadCloud01 } from "@untitledui/icons";
+import { Edit01, Eye, Image01, Plus, Trash01, UploadCloud01 } from "@untitledui/icons";
 import { toast } from "sonner";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
@@ -16,7 +16,7 @@ import { DataTable, type Columna } from "@/components/ui/data-table";
 import { PageHeader } from "@/components/ui/page-header";
 import type { Servicio } from "@/lib/types/database";
 import { mensajeError } from "@/lib/utils/error-handler";
-import { formatDuracion, formatMoneda } from "@/lib/utils/formatters";
+import { formatDuracion, formatFechaHora, formatMoneda } from "@/lib/utils/formatters";
 import { serviciosService } from "@/services/servicios.service";
 
 export default function ServiciosAdminPage() {
@@ -24,6 +24,7 @@ export default function ServiciosAdminPage() {
     const [cargando, setCargando] = useState(true);
     const [editar, setEditar] = useState<Servicio | "nuevo" | null>(null);
     const [aEliminar, setAEliminar] = useState<Servicio | null>(null);
+    const [aVer, setAVer] = useState<Servicio | null>(null);
     const [procesando, setProcesando] = useState(false);
 
     const cargar = useCallback(async () => {
@@ -91,6 +92,7 @@ export default function ServiciosAdminPage() {
             header: "",
             render: (s) => (
                 <div className="flex justify-end gap-1">
+                    <ButtonUtility size="sm" color="tertiary" icon={Eye} tooltip="Ver detalle" onClick={() => setAVer(s)} />
                     <ButtonUtility size="sm" color="tertiary" icon={Edit01} tooltip="Editar" onClick={() => setEditar(s)} />
                     <ButtonUtility size="sm" color="tertiary" icon={Trash01} tooltip="Eliminar" onClick={() => setAEliminar(s)} />
                 </div>
@@ -115,6 +117,14 @@ export default function ServiciosAdminPage() {
                 />
             )}
 
+            {aVer && (
+                <ModalDetalleServicio
+                    servicio={aVer}
+                    onCerrar={() => setAVer(null)}
+                    onEditar={() => { setEditar(aVer); setAVer(null); }}
+                />
+            )}
+
             <ConfirmacionModal
                 abierto={!!aEliminar}
                 onCerrar={() => setAEliminar(null)}
@@ -126,6 +136,68 @@ export default function ServiciosAdminPage() {
                 cargando={procesando}
             />
         </RequiereRol>
+    );
+}
+
+function FilaDetalle({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+    return (
+        <div className="flex justify-between gap-4 py-3">
+            <dt className="shrink-0 text-sm text-tertiary">{etiqueta}</dt>
+            <dd className="text-right text-sm font-medium break-words text-primary">{valor}</dd>
+        </div>
+    );
+}
+
+/** Vista de detalle de un servicio del catálogo: datos completos + edición. */
+function ModalDetalleServicio({ servicio, onCerrar, onEditar }: { servicio: Servicio; onCerrar: () => void; onEditar: () => void }) {
+    return (
+        <ModalOverlay isOpen onOpenChange={(o) => !o && onCerrar()} isDismissable>
+            <Modal className="max-w-lg">
+                <Dialog>
+                    <div className="rounded-2xl bg-primary p-6 shadow-xl">
+                        <div className="flex items-center gap-4">
+                            {servicio.imagen_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={servicio.imagen_url} alt={servicio.nombre} className="size-16 rounded-lg object-cover ring-1 ring-secondary" />
+                            ) : (
+                                <span className="flex size-16 items-center justify-center rounded-lg bg-secondary text-fg-quaternary">
+                                    <Image01 className="size-6" />
+                                </span>
+                            )}
+                            <div className="min-w-0">
+                                <h2 className="truncate text-lg font-semibold text-primary">{servicio.nombre}</h2>
+                                <p className="mt-0.5 text-sm text-tertiary">{servicio.categoria ?? "Sin categoría"}</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-1.5">
+                            <Badge color={servicio.visible_portal ? "success" : "gray"} type="pill-color" size="sm">
+                                {servicio.visible_portal ? "Visible en portal" : "Oculto"}
+                            </Badge>
+                            {servicio.destacado && <Badge color="brand" type="pill-color" size="sm">Destacado</Badge>}
+                            <Badge color={servicio.activo ? "success" : "gray"} type="pill-color" size="sm">
+                                {servicio.activo ? "Activo" : "Inactivo"}
+                            </Badge>
+                        </div>
+
+                        <dl className="mt-4 divide-y divide-secondary border-t border-secondary">
+                            <FilaDetalle etiqueta="Precio" valor={formatMoneda(servicio.precio)} />
+                            <FilaDetalle etiqueta="Tiempo estimado" valor={formatDuracion(servicio.tiempo_estimado_min)} />
+                            <FilaDetalle etiqueta="Categoría" valor={servicio.categoria ?? "—"} />
+                            <FilaDetalle etiqueta="Descripción" valor={servicio.descripcion ?? "—"} />
+                            <FilaDetalle etiqueta="Visible en el portal" valor={servicio.visible_portal ? "Sí" : "No"} />
+                            <FilaDetalle etiqueta="Destacado en inicio" valor={servicio.destacado ? "Sí" : "No"} />
+                            <FilaDetalle etiqueta="Fecha de creación" valor={formatFechaHora(servicio.creado_en)} />
+                        </dl>
+
+                        <div className="mt-6 flex justify-end gap-3">
+                            <Button color="secondary" onClick={onCerrar}>Cerrar</Button>
+                            <Button color="primary" iconLeading={Edit01} onClick={onEditar}>Editar</Button>
+                        </div>
+                    </div>
+                </Dialog>
+            </Modal>
+        </ModalOverlay>
     );
 }
 

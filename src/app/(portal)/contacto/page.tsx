@@ -11,10 +11,12 @@ import { FormInput, FormTextArea } from "@/components/ui/form-fields";
 import { useTallerContext } from "@/contexts/taller-context";
 import { contactoSchema, type ContactoInput } from "@/lib/utils/validators";
 import { mensajeError } from "@/lib/utils/error-handler";
+import { useMapsEmbed } from "@/hooks/use-maps-embed";
 import { configuracionService } from "@/services/configuracion.service";
 
 export default function ContactoPage() {
     const { config } = useTallerContext();
+    const mapsUrl = useMapsEmbed(config?.maps_embed_url);
     const [enviado, setEnviado] = useState(false);
     const { control, handleSubmit, reset, formState } = useForm<ContactoInput>({
         resolver: zodResolver(contactoSchema),
@@ -91,9 +93,9 @@ export default function ContactoPage() {
                             <p className="text-sm text-tertiary">{config?.direccion ?? "—"}</p>
                         </div>
                     </Card>
-                    {config?.maps_embed_url && (
+                    {mapsUrl && (
                         <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-secondary">
-                            <iframe src={config.maps_embed_url} className="h-full w-full" loading="lazy" title="Ubicación" />
+                            <iframe src={mapsUrl} className="h-full w-full" loading="lazy" title="Ubicación" />
                         </div>
                     )}
                 </div>

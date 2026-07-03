@@ -8,6 +8,7 @@ import { useTallerContext } from "@/contexts/taller-context";
 import { serviciosService } from "@/services/servicios.service";
 import type { Servicio } from "@/lib/types/database";
 import { formatMoneda, formatDuracion } from "@/lib/utils/formatters";
+import { useMapsEmbed } from "@/hooks/use-maps-embed";
 
 const VENTAJAS = [
     { icon: Tool01, titulo: "Mecánicos certificados", texto: "Personal capacitado y herramientas modernas para tu vehículo." },
@@ -18,6 +19,7 @@ const VENTAJAS = [
 export default function LandingPage() {
     const { config } = useTallerContext();
     const [servicios, setServicios] = useState<Servicio[]>([]);
+    const mapsUrl = useMapsEmbed(config?.maps_embed_url);
 
     useEffect(() => {
         serviciosService.destacados(6).then(setServicios).catch(() => setServicios([]));
@@ -49,14 +51,9 @@ export default function LandingPage() {
                         </div>
                     </div>
                     <div className="relative">
-                        <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br from-brand-solid to-brand-solid_hover p-8 shadow-xl">
-                            <div className="flex h-full flex-col justify-between text-white">
-                                <Tool01 className="size-12 opacity-80" />
-                                <div>
-                                    <p className="text-3xl font-bold">+15 años</p>
-                                    <p className="opacity-90">de experiencia al servicio de tu auto</p>
-                                </div>
-                            </div>
+                        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-white p-8 shadow-xl ring-1 ring-secondary">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/logo1.jpg" alt={`Logo de ${config?.nombre ?? "GaraGato"}`} className="max-h-full w-auto object-contain" />
                         </div>
                     </div>
                 </div>
@@ -122,11 +119,11 @@ export default function LandingPage() {
             </section>
 
             {/* Ubicación / mapa */}
-            {config?.maps_embed_url && (
+            {mapsUrl && (
                 <section className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
                     <h2 className="mb-6 text-2xl font-bold text-primary">¿Dónde estamos?</h2>
                     <div className="aspect-video w-full overflow-hidden rounded-2xl ring-1 ring-secondary">
-                        <iframe src={config.maps_embed_url} className="h-full w-full" loading="lazy" title="Ubicación del taller" />
+                        <iframe src={mapsUrl} className="h-full w-full" loading="lazy" title="Ubicación del taller" />
                     </div>
                 </section>
             )}

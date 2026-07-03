@@ -1,10 +1,11 @@
 "use client";
 
-import { LogOut01, Tool01, X as CloseIcon } from "@untitledui/icons";
+import { LogOut01, X as CloseIcon } from "@untitledui/icons";
 import { usePathname } from "next/navigation";
 import { NavItemBase } from "@/components/application/app-navigation/sidebar-navigation-base";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
+import { LogoMark } from "@/components/foundations/logo/logo-mark";
 import { useAuth } from "@/hooks/use-auth";
 import type { ItemNav } from "@/lib/navigation";
 import { cx } from "@/utils/cx";
@@ -24,9 +25,7 @@ export function Sidebar({ items, abiertoMovil, onCerrar }: SidebarProps) {
         <div className="flex h-full w-72 flex-col bg-primary">
             <div className="flex items-center justify-between px-5 py-5">
                 <div className="flex items-center gap-2">
-                    <span className="flex size-9 items-center justify-center rounded-lg bg-brand-solid text-white">
-                        <Tool01 className="size-5" />
-                    </span>
+                    <LogoMark />
                     <span className="text-lg font-bold text-primary">GaraGato</span>
                 </div>
                 <span className="lg:hidden">

@@ -92,7 +92,13 @@ export default function ConfiguracionPage() {
                         <Input label="Horario" value={form.horario ?? ""} onChange={set("horario")} />
                         <Input label="Moneda" value={form.moneda ?? ""} onChange={set("moneda")} />
                         <div className="sm:col-span-2">
-                            <TextArea label="URL de Google Maps (embed)" value={form.maps_embed_url ?? ""} onChange={set("maps_embed_url")} placeholder="https://www.google.com/maps/embed?..." />
+                            <TextArea
+                                label="URL de Google Maps (embed)"
+                                value={form.maps_embed_url ?? ""}
+                                onChange={set("maps_embed_url")}
+                                placeholder="https://www.google.com/maps?q=-17.372066,-66.180435&z=17&output=embed"
+                                hint="Usa una URL de tipo embed (Compartir → Insertar un mapa) o con coordenadas (?q=lat,lng&output=embed). Los enlaces cortos maps.app.goo.gl no funcionan en el mapa."
+                            />
                         </div>
                     </CardBody>
                 </Card>
